@@ -15,8 +15,6 @@
  */
 package nl.javadude.gradle.plugins.license
 
-import org.gradle.util.ConfigureUtil
-
 /**
  * Extension contains attributes for {@link DownloadLicenses}.
  */
@@ -110,7 +108,10 @@ class DownloadLicensesExtension {
      * @param closure configuring closure
      */
     def report(Closure closure) {
-        ConfigureUtil.configure(closure, report)
+        closure.delegate = report
+        closure.resolveStrategy = Closure.DELEGATE_FIRST
+        closure.call()
+        report
     }
 
     def static group(String group) {

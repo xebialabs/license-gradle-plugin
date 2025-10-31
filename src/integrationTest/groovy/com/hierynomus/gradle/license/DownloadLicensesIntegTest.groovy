@@ -16,7 +16,9 @@
 package com.hierynomus.gradle.license
 
 import com.hierynomus.gradle.license.LicenseReportingPlugin
-import groovy.util.slurpersupport.GPathResult
+import groovy.xml.slurpersupport.GPathResult
+import groovy.xml.XmlSlurper
+import groovy.ant.AntBuilder
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Shared

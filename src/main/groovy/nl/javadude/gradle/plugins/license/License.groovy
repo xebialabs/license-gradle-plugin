@@ -24,7 +24,9 @@ import nl.javadude.gradle.plugins.license.maven.LicenseFormatMojo
 import org.gradle.api.GradleException
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.file.FileCollection
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.tasks.*
+import org.gradle.api.tasks.util.internal.PatternSetFactory
 
 import javax.inject.Inject
 
@@ -36,7 +38,8 @@ import javax.inject.Inject
  *
  * @author jryan
  */
-class License extends SourceTask implements VerificationTask {
+abstract class License extends SourceTask implements VerificationTask {
+    
     /**
      * Whether or not to allow the build to continue if there are warnings.
      */
@@ -104,13 +107,13 @@ class License extends SourceTask implements VerificationTask {
     @Nested
     NamedDomainObjectContainer<HeaderDefinitionBuilder> headerDefinitions
 
-    @Inject
-    @Deprecated
-    License() {
-    }
+    // Store project root dir at configuration time to avoid Task.project at execution time
+    @Internal
+    File projectRootDir
 
-    License(boolean check) {
-        this.check = check
+    License() {
+        this.projectRootDir = project.rootDir
+        this.check = false
     }
 
     @TaskAction
@@ -125,9 +128,9 @@ class License extends SourceTask implements VerificationTask {
         }
         CallbackWithFailure callback
         if (isCheck()) {
-            callback = new LicenseCheckMojo(getProject().rootDir, isSkipExistingHeaders())
+            callback = new LicenseCheckMojo(projectRootDir, isSkipExistingHeaders())
         } else {
-            callback = new LicenseFormatMojo(getProject().rootDir, isDryRun(), isSkipExistingHeaders())
+            callback = new LicenseFormatMojo(projectRootDir, isDryRun(), isSkipExistingHeaders())
         }
 
         Map<String, String> initial = combineVariables()
@@ -135,7 +138,7 @@ class License extends SourceTask implements VerificationTask {
 
         URI uri = resolveURI()
 
-        new AbstractLicenseMojo(validHeaders, getProject().rootDir, initial, isDryRun(), isSkipExistingHeaders(), isUseDefaultMappings(), isStrictCheck(), uri, source, combinedMappings, getEncoding(), buildHeaderDefinitions())
+        new AbstractLicenseMojo(validHeaders, projectRootDir, initial, isDryRun(), isSkipExistingHeaders(), isUseDefaultMappings(), isStrictCheck(), uri, source, combinedMappings, getEncoding(), buildHeaderDefinitions())
             .execute(callback)
 
         altered = callback.getAffected()

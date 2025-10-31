@@ -16,10 +16,17 @@
 package com.hierynomus.gradle.license.tasks
 
 import nl.javadude.gradle.plugins.license.License
+import org.gradle.api.tasks.util.internal.PatternSetFactory
 
-class LicenseCheck extends License {
+import javax.inject.Inject
+
+abstract class LicenseCheck extends License {
 
     LicenseCheck() {
-        super(true)
+        super()
+        this.check = true
     }
+    
+    @Inject
+    abstract PatternSetFactory getPatternSetFactory()
 }
