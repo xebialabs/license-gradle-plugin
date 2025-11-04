@@ -140,7 +140,9 @@ license {
 tasks.withType(Test).all { t ->
   // Exclude Android tests that fail due to Android Gradle Plugin compatibility
   t.exclude '**/AndroidLicensePluginTest**'
-  // Temporarily exclude integration tests that extend IntegrationSpec (Nebula Test compatibility issue with JUnit Platform)
+  
+  // Temporarily exclude integration tests that extend IntegrationSpec 
+  // (Nebula Test compatibility issue with JUnit Platform)
   if (t.name == 'integrationTest') {
     t.exclude '**/LicenseIntegrationTest**'
     t.exclude '**/LicenseReportIntegrationTest**'
