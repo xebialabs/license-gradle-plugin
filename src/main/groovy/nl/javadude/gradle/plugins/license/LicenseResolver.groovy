@@ -186,7 +186,7 @@ class LicenseResolver {
 
             d.each {
                 FileCollectionDependency fileDependency ->
-                    fileDependency.resolve().each {
+                    fileDependency.files.each {
                         if (isDependencyIncluded(it.name)) {
                             fileDependencies.add(it.name)
                         }

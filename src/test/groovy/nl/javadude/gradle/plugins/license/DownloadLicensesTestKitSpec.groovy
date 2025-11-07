@@ -15,25 +15,53 @@
  */
 package nl.javadude.gradle.plugins.license
 
-import nebula.test.IntegrationSpec
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
+import spock.lang.Specification
+import spock.lang.TempDir
 
-class DownloadLicensesTestKitSpec extends IntegrationSpec {
+class DownloadLicensesTestKitSpec extends Specification {
+    @TempDir
+    File projectDir
+    
+    File buildFile
+    File settingsFile
+    
+    def setup() {
+        buildFile = new File(projectDir, "build.gradle")
+        settingsFile = new File(projectDir, "settings.gradle")
+        
+        settingsFile << """
+rootProject.name = 'test-project'
+"""
+    }
+    
+    def runTask(String... tasks) {
+        return GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments(tasks + '--stacktrace')
+            .withPluginClasspath()
+            .build()
+    }
+    
     def "Should correctly take project.buildDir into account for generated reports"() {
         given:
         buildFile << """
-apply plugin: 'com.github.hierynomus.license'
-apply plugin: 'java'
+plugins {
+    id 'java'
+    id 'com.github.hierynomus.license'
+}
+
 buildDir = "generated"
 
 dependencies {
-    compile 'com.google.guava:guava:14.0'
+    implementation 'com.google.guava:guava:14.0'
 }
 
 repositories { mavenCentral() }
 """
         when:
-        runTasksSuccessfully('downloadLic')
+        def result = runTask('downloadLic')
 
         then:
         new File(projectDir, "generated/reports").exists()

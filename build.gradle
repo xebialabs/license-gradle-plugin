@@ -66,6 +66,24 @@ configurations.implementation.transitive = false
 
 sourceSets.create("integrationTest")
 
+// Create a task to write plugin metadata for TestKit
+def createPluginClasspathManifest = tasks.register("createPluginClasspathManifest") {
+    def outputDir = file("${buildDir}/createPluginClasspathManifest")
+
+    inputs.files(sourceSets.main.runtimeClasspath)
+        .withPropertyName("runtimeClasspath")
+        .withNormalizer(ClasspathNormalizer)
+    outputs.dir(outputDir)
+        .withPropertyName("outputDir")
+
+    doLast {
+        outputDir.mkdirs()
+        def props = new Properties()
+        props.setProperty("implementation-classpath", sourceSets.main.runtimeClasspath.join(File.pathSeparator))
+        file("${outputDir}/plugin-under-test-metadata.properties").withOutputStream { props.store(it, null) }
+    }
+}
+
 dependencies {
   signature 'org.codehaus.mojo.signature:java17:1.0@signature'
 
@@ -85,23 +103,23 @@ dependencies {
     integrationTestImplementation(project)
     integrationTestImplementation gradleTestKit()
     integrationTestImplementation 'com.netflix.nebula:nebula-test:11.6.3'
-    integrationTestImplementation 'org.spockframework:spock-core:2.4-M6-groovy-4.0'
+    integrationTestImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     integrationTestImplementation 'com.google.guava:guava:17.0'
     integrationTestImplementation 'junit:junit:4.13.1'  // For JUnit 4 imports in test code
     // JUnit Platform (JUnit 5) for Spock 2.x and Nebula Test 11.x
     integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    integrationTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-api'
     integrationTestRuntimeOnly 'org.junit.vintage:junit-vintage-engine'  // To run JUnit 4 tests on JUnit Platform
+    integrationTestRuntimeOnly files(createPluginClasspathManifest)  // Make plugin classpath available to TestKit
 
     testImplementation gradleTestKit()
     testImplementation 'com.netflix.nebula:nebula-test:11.6.3'
-    testImplementation 'org.spockframework:spock-core:2.4-M6-groovy-4.0'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     testImplementation 'com.google.guava:guava:17.0'
     testImplementation 'junit:junit:4.13.1'  // For JUnit 4 imports in test code
     // JUnit Platform (JUnit 5) for Spock 2.x and Nebula Test 11.x
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'  // To run JUnit 4 tests on JUnit Platform
+    testRuntimeOnly files(createPluginClasspathManifest)  // Make plugin classpath available to TestKit
 }
 
 tasks.named('test') {
@@ -140,17 +158,6 @@ license {
 tasks.withType(Test).all { t ->
   // Exclude Android tests that fail due to Android Gradle Plugin compatibility
   t.exclude '**/AndroidLicensePluginTest**'
-  
-  // Temporarily exclude integration tests that extend IntegrationSpec 
-  // (Nebula Test compatibility issue with JUnit Platform)
-  if (t.name == 'integrationTest') {
-    t.exclude '**/LicenseIntegrationTest**'
-    t.exclude '**/LicenseReportIntegrationTest**'
-    t.exclude '**/DownloadLicensesTestKitSpec**'
-  }
-  if (t.name == 'test') {
-    t.exclude '**/DownloadLicensesTestKitSpec**'
-  }
   
   t.afterSuite { descriptor, result ->
     def indicator = "\u001B[32m✓\u001b[0m"

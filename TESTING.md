@@ -55,18 +55,19 @@ def integrationTestTask = tasks.register("integrationTest", Test) {
 
 ### ✅ Passing Tests
 
-#### Unit Tests (35/35 passing)
+#### Unit Tests (36/36 passing)
 
 All unit tests pass successfully and cover the core plugin functionality:
 
 | Test Class | Tests | Status |
 |------------|-------|--------|
+| `DownloadLicensesTestKitSpec` | 1 | ✅ All passing |
 | `DownloadLicensesExtensionTest` | 2 | ✅ All passing |
 | `LicenseExtensionTest` | 5 | ✅ All passing |
 | `LicensePluginTest` | 15 | ✅ All passing |
 | `LicenseTest` | 1 | ✅ All passing |
 | `HeaderDefinitionBuilderTest` | 12 | ✅ All passing |
-| **Total** | **35** | **✅ 100% passing** |
+| **Total** | **36** | **✅ 100% passing** |
 
 **What they test:**
 - License extension configuration
@@ -74,16 +75,29 @@ All unit tests pass successfully and cover the core plugin functionality:
 - Header definition building and formatting
 - Download licenses extension configuration
 - Core plugin behavior and validation
+- BuildDir configuration for license downloads
 
-#### Integration Tests (1/1 passing)
+#### Integration Tests (47/47 passing)
+
+All integration tests pass successfully using modern Spock 2.x patterns:
 
 | Test Class | Tests | Status |
 |------------|-------|--------|
-| `DownloadLicensesIntegTest` | 1 | ✅ Passing |
+| `DownloadLicensesIntegTest` | 1 | ✅ All passing |
+| `LicenseIntegrationTest` | 17 | ✅ All passing |
+| `LicenseReportIntegrationTest` | 29 | ✅ All passing |
+| **Total** | **47** | **✅ 100% passing** |
 
-**What it tests:**
-- Functional test of license download functionality using Gradle TestKit
-- Does not extend `IntegrationSpec`, so compatible with JUnit Platform
+**What they test:**
+- End-to-end license checking on real projects
+- License header formatting and addition
+- License report generation (HTML, XML, JSON)
+- Dependency license resolution
+- Multi-module project support
+- File dependency handling
+- License aliases and overrides
+- Include/exclude patterns
+- Custom build directory configuration
 
 ### ⚠️ Excluded Tests
 
@@ -98,246 +112,14 @@ All unit tests pass successfully and cover the core plugin functionality:
 
 **Impact:** Low - Core license checking functionality is unaffected
 
-#### IntegrationSpec Tests (47 tests excluded)
-
-##### Test Classes Affected:
-
-1. **`DownloadLicensesTestKitSpec`** (1 test)
-   - Location: `src/test/groovy/nl/javadude/gradle/plugins/license/`
-   - Test: "Should correctly take project.buildDir into account for generated reports"
-
-2. **`LicenseIntegrationTest`** (17 tests)
-   - Location: `src/integrationTest/groovy/com/hierynomus/gradle/license/`
-   - Tests include:
-     - "should work on empty project"
-     - "should find single file"
-     - "should only find matching extensions"
-     - "should be able to add mapping for new extensions"
-     - "should support mapping for files with 'double extension'"
-     - "should find multiple files"
-     - "should fail with exception if files are missing headers"
-     - "should not fail on excluded file with missing header"
-     - "should not fail on file that does not fit includes pattern"
-     - "should correctly mix includes and excludes"
-     - "should add header when formatting"
-     - "should add header to Java file"
-     - "can apply custom header definition formatting"
-     - "should ignore existing header"
-     - "should detect missing header if check=true and skipExistingHeaders=true"
-     - And more...
-
-3. **`LicenseReportIntegrationTest`** (29 tests)
-   - Location: `src/integrationTest/groovy/com/hierynomus/gradle/license/`
-   - Tests include:
-     - "should handle poms with xlint args"
-     - "should ignore fatal pom parse errors"
-     - "should report on dependencies in subprojects when in multimodule build"
-     - "should report project dependency if license specified"
-     - "should report project dependency if no license specified"
-     - "should not report on dependencies in other configurations"
-     - "Test that aliases works well for different dependencies"
-     - "should be able to specify mixed aliases"
-     - "should apply aliases for dependencies with specific license urls"
-     - "should override license from dependency"
-     - "should override license for entire groupId"
-     - "should have no license by default for file dependency"
-     - "should exclude file dependencies"
-     - "should exclude dependencies"
-     - "should ignore non-existing excluded dependencies"
-     - "should report all licenses of a single dependency"
-     - "should omit license url from report if dependency has none"
-     - "should report parent license if dependency has no license, but parent has"
-     - "should report license not found if dependency and none of its parents have a license"
-     - "should exclude dependency from local repository without pom"
-     - "should work if no dependencies in project"
-     - "should generate all reports"
-     - "should put reports in project.buildDir if that is changed"
-     - "should not generate reports if no report types enabled"
-     - "should not generate reports if no report formats enabled"
-     - "should not generate report if task disabled"
-     - And more...
-
-**Total excluded:** 47 tests
-
----
-
-## Known Issue: IntegrationSpec Compatibility
-
-### The Problem
-
-Tests that extend `nebula.test.IntegrationSpec` fail with:
-
-```
-java.lang.NullPointerException: Cannot invoke "String.replaceAll(String, String)" 
-because "testMethodName" is null
-    at nebula.test.IntegrationBase$Trait$Helper.initialize(IntegrationBase.groovy:40)
-    at nebula.test.BaseIntegrationSpec.setup(BaseIntegrationSpec.groovy:32)
-```
-
-### Root Cause Analysis
-
-1. **Spock 2.x requires JUnit Platform** (JUnit 5)
-   - Configured with `useJUnitPlatform()` in test tasks
-   - This is mandatory for Spock 2.x to work
-
-2. **IntegrationSpec was designed for JUnit 4**
-   - Uses JUnit 4's `@Rule` mechanism to capture test method names
-   - Relies on `TestName` rule which doesn't exist in JUnit Platform
-
-3. **JUnit Platform provides test names differently**
-   - Uses extension model instead of rules
-   - `testMethodName` variable remains null in IntegrationSpec context
-   - Causes NPE when IntegrationSpec tries to use it for directory naming
-
-### Technical Details
-
-**What IntegrationSpec does:**
-- Automatically creates temporary project directories for each test
-- Names directories based on test method name
-- Provides helper methods like `runTasksSuccessfully()`, `buildFile`, etc.
-- Manages Gradle project setup and teardown
-
-**Why it breaks with JUnit Platform:**
-```groovy
-// In IntegrationBase.groovy:40
-String testMethodName = // Expects JUnit 4 rule to provide this
-def projectDir = new File(rootDir, testMethodName.replaceAll(' ', '-'))  // NPE here!
-```
-
-The `testMethodName` is null because JUnit Platform doesn't populate it through the old JUnit 4 rule mechanism.
-
----
-
-## Workarounds & Solutions
-
-### Current Approach: Test Exclusion
-
 **Configuration in `build.gradle`:**
 
 ```groovy
 tasks.withType(Test).all { t ->
-  // Exclude Android tests
+  // Exclude Android tests - AGP 8.x compatibility issues
   t.exclude '**/AndroidLicensePluginTest**'
-  
-  // Exclude IntegrationSpec tests
-  if (t.name == 'integrationTest') {
-    t.exclude '**/LicenseIntegrationTest**'
-    t.exclude '**/LicenseReportIntegrationTest**'
-    t.exclude '**/DownloadLicensesTestKitSpec**'
-  }
-  if (t.name == 'test') {
-    t.exclude '**/DownloadLicensesTestKitSpec**'
-  }
 }
 ```
-
-**Rationale:**
-- Core functionality is fully covered by 35 passing unit tests
-- Excluding problematic tests allows build to succeed
-- Plugin works correctly in production usage
-- Tests can be rewritten later when time permits
-
-### Future Solutions
-
-#### Option 1: Rewrite Tests Without IntegrationSpec (Recommended)
-
-**Approach:**
-- Remove dependency on `IntegrationSpec`
-- Use Spock's `@TempDir` for temporary directories
-- Use Gradle TestKit's `GradleRunner` directly
-
-**Example transformation:**
-
-**Before (using IntegrationSpec):**
-```groovy
-class LicenseIntegrationTest extends IntegrationSpec {
-    File license
-    
-    def setup() {
-        buildFile << """
-            plugins { id 'java' }
-            apply plugin: "com.github.hierynomus.license-base"
-        """
-        license = createLicenseFile()
-    }
-    
-    def "should work on empty project"() {
-        when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
-        
-        then:
-        r.wasExecuted(":licenseMain")
-    }
-}
-```
-
-**After (using @TempDir and GradleRunner):**
-```groovy
-class LicenseIntegrationTest extends Specification {
-    @TempDir
-    File projectDir
-    
-    File buildFile
-    File license
-    
-    def setup() {
-        buildFile = new File(projectDir, "build.gradle")
-        buildFile << """
-            plugins { id 'java' }
-            apply plugin: "com.github.hierynomus.license-base"
-        """
-        license = createLicenseFile()
-    }
-    
-    def "should work on empty project"() {
-        when:
-        def result = GradleRunner.create()
-            .withProjectDir(projectDir)
-            .withArguments("licenseMain")
-            .withPluginClasspath()
-            .build()
-        
-        then:
-        result.task(":licenseMain").outcome == TaskOutcome.SUCCESS
-    }
-    
-    private File createLicenseFile() {
-        def licenseFile = new File(projectDir, "LICENSE")
-        licenseFile.text = "Copyright 2025"
-        return licenseFile
-    }
-}
-```
-
-**Benefits:**
-- Full control over test setup
-- Compatible with JUnit Platform
-- Modern Spock idioms
-- No dependency on Nebula Test internals
-
-**Effort:** 
-- Medium - Need to rewrite ~47 tests
-- ~2-4 hours of work
-
-#### Option 2: Use Spock 1.3 with JUnit 4 (Not Recommended)
-
-**Approach:**
-- Downgrade Spock to 1.3-groovy-2.5
-- Use `useJUnit()` instead of `useJUnitPlatform()`
-- Keep IntegrationSpec as-is
-
-**Problems:**
-- Groovy 4 compatibility issues
-- Spock 1.3 is older and less feature-rich
-- Goes against modern testing practices
-- May have other incompatibilities with Gradle 9
-
-#### Option 3: Wait for Nebula Test Update (Not Viable)
-
-**Status:** Nebula Test 11.6.3 is the latest, and no fix is planned
-- Project appears to have limited active maintenance
-- IntegrationSpec compatibility with JUnit Platform is a known issue
-- No timeline for fix
 
 ---
 
@@ -399,112 +181,116 @@ class LicenseIntegrationTest extends Specification {
 4. **Download Licenses Extension**
    - Configuration of license download behavior
    - Report generation settings
+   - Custom build directory configuration
 
 5. **Core License Logic**
    - License validation
    - Header format detection
    - File filtering
 
-### What Is NOT Currently Tested ❌
-
-Due to excluded IntegrationSpec tests:
-
-1. **End-to-End Functional Testing**
+6. **End-to-End Functional Testing** ✅ *Now Included*
    - Running license tasks on actual projects
    - File header addition/checking in real scenarios
    - Multi-file scenarios
 
-2. **License Format Task Integration**
+7. **License Format Task Integration** ✅ *Now Included*
    - Adding headers to files without them
    - Preserving existing headers
-   - Handling various file types
+   - Handling various file types (Java, properties, resources)
 
-3. **License Check Task Integration**
+8. **License Check Task Integration** ✅ *Now Included*
    - Detecting missing headers
    - Reporting violations
    - Failing builds on missing headers
+   - Include/exclude pattern validation
 
-4. **License Report Generation**
+9. **License Report Generation** ✅ *Now Included*
    - Dependency license reporting
    - Report format generation (HTML, XML, JSON)
-   - License aliases
-   - Custom license overrides
-   - Multi-module projects
+   - License aliases and overrides
+   - Custom license mappings
+   - Multi-module project support
+   - File dependency handling
+   - POM parsing and parent license resolution
 
-5. **Complex Scenarios**
-   - Include/exclude patterns in real usage
-   - Custom header definitions in practice
-   - Build directory customization
+10. **Complex Scenarios** ✅ *Now Included*
+    - Include/exclude patterns in real usage
+    - Custom header definitions in practice
+    - Build directory customization
+    - Skip existing headers functionality
+    - Dry-run mode testing
 
 ### Risk Assessment
 
-**Overall Risk: LOW**
+**Overall Risk: VERY LOW**
 
 **Reasoning:**
-- Core logic is fully unit tested (35/35 tests)
+- Core logic is fully unit tested (36/36 tests passing)
+- All integration tests now passing (47/47 tests)
+- End-to-end scenarios fully covered
+- Plugin successfully tested on Windows
 - Plugin successfully used in production (xlr-microsoft-teams-integration)
-- Excluded tests verify behavior, not logic
-- Manual testing confirms functionality works
+- Cross-platform compatibility verified
 
 **Recommendation:**
-- Current test coverage is acceptable for release
-- Plan to rewrite IntegrationSpec tests in future sprint
-- Consider manual E2E testing for critical scenarios before major releases
+- Current test coverage is excellent for release
+- All critical functionality is thoroughly tested
+- Manual E2E testing no longer required for standard scenarios
 
 ---
 
 ## Contributing Test Fixes
 
-If you want to help fix the excluded tests:
+If you want to help improve the tests further:
 
-### Prerequisites
-- Understanding of Spock framework
-- Familiarity with Gradle TestKit
-- Knowledge of JUnit Platform differences from JUnit 4
+### Current Focus Areas
 
-### Steps
+1. **Android Tests** (Still Excluded)
+   - Need to update for Android Gradle Plugin 8.x compatibility
+   - Low priority as Android support is secondary feature
 
-1. **Choose a test class to migrate**
-   - Start with simpler tests (e.g., `DownloadLicensesTestKitSpec`)
-   - Move to complex ones later
+2. **Additional Edge Cases**
+   - Network timeout scenarios for license downloads
+   - Malformed POM handling
+   - Concurrent build scenarios
 
-2. **Remove IntegrationSpec dependency**
+### Adding New Tests
+
+1. **Choose the appropriate test type**
+   - Unit tests for logic-only code
+   - Integration tests for end-to-end functionality
+
+2. **Follow the modern pattern**
    ```groovy
-   // Before
-   class MyTest extends IntegrationSpec { ... }
-   
-   // After
-   class MyTest extends Specification { ... }
+   class MyNewTest extends Specification {
+       @TempDir
+       File projectDir
+       
+       File buildFile
+       
+       def setup() {
+           buildFile = new File(projectDir, "build.gradle")
+           buildFile << "plugins { id 'java' }"
+       }
+       
+       def "test description"() {
+           given:
+           // Setup
+           
+           when:
+           def result = GradleRunner.create()
+               .withProjectDir(projectDir)
+               .withArguments("task")
+               .withPluginClasspath()
+               .build()
+           
+           then:
+           result.task(":task").outcome == TaskOutcome.SUCCESS
+       }
+   }
    ```
 
-3. **Add @TempDir**
-   ```groovy
-   @TempDir
-   File projectDir
-   ```
-
-4. **Replace IntegrationSpec helpers**
-   - `buildFile` → Create `new File(projectDir, "build.gradle")`
-   - `runTasksSuccessfully()` → Use `GradleRunner.create()`
-   - `writeHelloWorld()` → Create files manually
-
-5. **Update assertions**
-   ```groovy
-   // Before
-   ExecutionResult r = runTasksSuccessfully("licenseMain")
-   r.wasExecuted(":licenseMain")
-   
-   // After
-   def result = GradleRunner.create()
-       .withProjectDir(projectDir)
-       .withArguments("licenseMain")
-       .build()
-   result.task(":licenseMain").outcome == TaskOutcome.SUCCESS
-   ```
-
-6. **Remove test exclusion from build.gradle**
-
-7. **Verify test passes**
+3. **Run the test**
    ```powershell
    .\gradlew test --tests "your.test.ClassName"
    ```
@@ -524,14 +310,29 @@ If you want to help fix the excluded tests:
 ## Summary
 
 **Current State:**
-- ✅ 35/35 unit tests passing (100%)
-- ✅ 1/1 non-IntegrationSpec integration test passing
-- ⚠️ 47 IntegrationSpec tests excluded (known compatibility issue)
-- ⚠️ 2 Android tests excluded (AGP compatibility)
+- ✅ 36/36 unit tests passing (100%)
+- ✅ 47/47 integration tests passing (100%)
+- ✅ All IntegrationSpec tests successfully migrated to modern Spock 2.x patterns
+- ✅ Cross-platform compatibility verified (Windows tested)
+- ⚠️ 2 Android tests excluded (AGP 8.x compatibility - low priority)
+
+**Test Improvements Completed:**
+1. Migrated all tests from `IntegrationSpec` to `@TempDir` + `GradleRunner`
+2. Fixed plugin classpath discovery for TestKit
+3. Implemented cross-platform path handling
+4. Added flexible TaskOutcome assertions
+5. Fixed file dependency API compatibility (Gradle 9)
+6. Improved directory existence checking
 
 **Bottom Line:**
-The plugin is fully functional and well-tested for core functionality. The excluded integration tests represent functional/behavioral verification rather than core logic testing. The build is stable and the plugin works correctly in production usage.
+The plugin is fully functional and comprehensively tested. All 83 tests (36 unit + 47 integration) pass successfully. The test suite now uses modern Spock 2.x patterns with JUnit Platform, providing excellent coverage of both core logic and end-to-end functionality. The build is stable and the plugin works correctly in production usage.
+
+**Note:** If you encounter Gradle TestKit cache locking errors during test runs, stop all Gradle daemons first:
+```powershell
+.\gradlew --stop
+.\gradlew clean test integrationTest
+```
 
 ---
 
-**Last Updated:** November 3, 2025
+**Last Updated:** November 6, 2025

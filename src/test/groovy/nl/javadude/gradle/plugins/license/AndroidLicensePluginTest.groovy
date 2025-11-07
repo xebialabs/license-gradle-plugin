@@ -86,9 +86,8 @@ class AndroidLicensePluginTest {
     }
 
     @Test
-    public void extensionShouldNotHaveSourceSets() {
-        assertThat project.license.sourceSets, is(notNullValue())
-        assertThat project.license.sourceSets.size(), equalTo(0)
+    public void extensionShouldBeCreated() {
+        assertThat project.license, is(notNullValue())
     }
 
     @Test
@@ -126,11 +125,6 @@ class AndroidLicensePluginTest {
     public void shouldFindTestLicenseTask() {
         def task = project.tasks.getByName("licenseAndroidAndroidTest")
         assertThat task, instanceOf(License.class)
-    }
-
-    @Test
-    public void extensionShouldHaveSourceSetsWithJava() {
-        assertThat project.license.sourceSets.size(), equalTo(project.sourceSets.size())
     }
 
     @Test

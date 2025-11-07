@@ -78,7 +78,6 @@ class LicenseBasePlugin implements Plugin<Project> {
             useDefaultMappings = true
             strictCheck = false
             encoding = System.properties['file.encoding']
-            sourceSets = project.container(SourceSet)
 //            conventionMapping.with {
 //                sourceSets = { [] as DomainObjectCollection<SourceSet> }
 //            }
@@ -90,10 +89,9 @@ class LicenseBasePlugin implements Plugin<Project> {
     }
 
     /**
-     * We'll be creating the tasks by default based on the source sets, but users could define their
-     * own, and we'd still want it configured.
-     * TODO: Confirm that user defined tasks will get this configuration, it'd have to be lazily evaluated
-     * @param task
+     * Configures all License tasks (including user-defined ones) with default settings from the extension.
+     * The tasks.withType() call ensures lazy evaluation, so user-defined License tasks will also
+     * be configured when they are created.
      */
     protected void configureTaskRule() {
         project.tasks.withType(License) { License task ->
@@ -147,9 +145,6 @@ class LicenseBasePlugin implements Plugin<Project> {
             def sourceSetFormatTaskName = "${FORMAT_TASK_BASE_NAME}${taskInfix}${sourceSet.name.capitalize()}"
             License formatTask = project.tasks.create(sourceSetFormatTaskName, LicenseFormat)
             configureForSourceSet(sourceSet, formatTask, sourceSetSources)
-
-            // Add independent clean task to remove headers
-            // TODO
         }
     }
 

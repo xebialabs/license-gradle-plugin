@@ -24,17 +24,11 @@ import nl.javadude.gradle.plugins.license.maven.LicenseFormatMojo
 import org.gradle.api.GradleException
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.file.FileCollection
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.tasks.*
-import org.gradle.api.tasks.util.internal.PatternSetFactory
-
-import javax.inject.Inject
 
 /**
  * Task to back License. Using convention of naming Task types with just their name, which makes calls
  * like tasks.withType(License) nicer, consistent with most internal Gradle tasks.
- *
- * TODO: See if removing headers is valuable to add in
  *
  * @author jryan
  */
@@ -59,8 +53,6 @@ abstract class License extends SourceTask implements VerificationTask {
      * Whether to skip file where a header has been detected
      */
     @Input boolean skipExistingHeaders = false
-
-    // TODO useDefaultExcludes, not necessary because we're using source sets
 
     /**
      * @link {AbstractLicenseMojo.useDefaultMappings}

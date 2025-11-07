@@ -16,9 +16,7 @@
 package nl.javadude.gradle.plugins.license
 
 import nl.javadude.gradle.plugins.license.header.HeaderDefinitionBuilder
-import org.gradle.api.DomainObjectCollection
 import org.gradle.api.NamedDomainObjectContainer
-import org.gradle.api.tasks.SourceSet
 /**
  * Extension in the license namespace, which drives the License tasks.
  *
@@ -34,12 +32,6 @@ class LicenseExtension {
      * URI to header to apply to files
      */
     URI headerURI
-
-    /**
-     * Source sets to perform search on, will default to all sourceSets in the project
-     * @deprecated Is no longer used.
-     */
-    DomainObjectCollection<SourceSet> sourceSets
 
     /**
      * Path patterns to exclude while applying licenses or reporting missing licenses
