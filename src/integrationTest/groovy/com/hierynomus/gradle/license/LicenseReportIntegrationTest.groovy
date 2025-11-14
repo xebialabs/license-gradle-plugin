@@ -1,23 +1,38 @@
 package com.hierynomus.gradle.license
 
+import com.google.common.io.Files
 import groovy.xml.XmlSlurper
 import groovy.xml.slurpersupport.GPathResult
-import nebula.test.IntegrationSpec
+import nl.javadude.gradle.plugins.license.LicensePlugin
+import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
+import spock.lang.Specification
+import spock.lang.TempDir
 import spock.lang.Unroll
 
-class LicenseReportIntegrationTest extends IntegrationSpec {
-
+class LicenseReportIntegrationTest extends Specification {
+    @TempDir
+    File projectDir
+    
+    File buildFile
+    File settingsFile
     File outputDir
     File subProject
     File subProjectBuildFile
 
     def setup() {
+        buildFile = new File(projectDir, "build.gradle")
+        settingsFile = new File(projectDir, "settings.gradle")
+        
+        settingsFile << """
+rootProject.name = 'test-project'
+"""
+        
         buildFile << """
 plugins {
     id "java"
+    id "com.github.hierynomus.license-report"
 }
-
-apply plugin: "com.github.hierynomus.license-report"
 
 group = "testGroup"
 version = "1.5"
@@ -36,7 +51,8 @@ downloadLicenses {
     dependencyConfiguration = "runtimeClasspath"
 }
 """
-        subProject = addSubproject("subproject")
+        subProject = new File(projectDir, "subproject")
+        subProject.mkdirs()
         subProjectBuildFile = new File(subProject, "build.gradle")
         subProjectBuildFile << """
 plugins {
@@ -50,7 +66,36 @@ repositories {
     mavenCentral()
 }
 """
-        outputDir = directory("build/reports/license")
+        
+        // Also update settings to include subproject
+        settingsFile << """
+include 'subproject'
+"""
+        
+        outputDir = new File(projectDir, "build/reports/license")
+    }
+    
+    def runTask(String... tasks) {
+        return GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments(tasks + '--stacktrace')
+            .withPluginClasspath()
+            .build()
+    }
+    
+    def runTaskWithFailure(String... tasks) {
+        return GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments(tasks + '--stacktrace')
+            .withPluginClasspath()
+            .buildAndFail()
+    }
+    
+    def createFile(String path) {
+        File file = new File(projectDir, path)
+        Files.createParentDirs(file)
+        file.createNewFile()
+        return file
     }
 
     def "should handle poms with xlint args"() {
@@ -61,7 +106,7 @@ dependencies {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         outputDir.listFiles().length == 4
@@ -81,7 +126,7 @@ downloadLicenses.ignoreFatalParseErrors = true
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         dependenciesInReport(xml4LicenseByDependencyReport()) == 24
@@ -104,7 +149,7 @@ downloadLicenses {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -133,7 +178,7 @@ downloadLicenses.licenses = [
 downloadLicenses.includeProjectDependencies = true
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -154,7 +199,7 @@ dependencies {
 downloadLicenses.includeProjectDependencies = true
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -176,7 +221,7 @@ dependencies {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -188,9 +233,9 @@ dependencies {
 
     def "Test that aliases works well for different dependencies with the same license for string->list mapping"() {
         given:
-        file("testDependency1.jar")
-        file("testDependency2.jar")
-        file("testDependency3.jar")
+        createFile("testDependency1.jar")
+        createFile("testDependency2.jar")
+        createFile("testDependency3.jar")
 
         buildFile << """
 downloadLicenses {
@@ -214,7 +259,7 @@ dependencies {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -233,9 +278,9 @@ dependencies {
 
     def "Test that aliases works well for different dependencies with the same license for licenseMetadata->list mapping"() {
         given:
-        file("testDependency1.jar")
-        file("testDependency2.jar")
-        file("testDependency3.jar")
+        createFile("testDependency1.jar")
+        createFile("testDependency2.jar")
+        createFile("testDependency3.jar")
 
         buildFile << """
 downloadLicenses {
@@ -257,7 +302,7 @@ dependencies {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -276,9 +321,9 @@ dependencies {
 
     def "should be able to specify mixed aliases"() {
         given:
-        file("testDependency1.jar")
-        file("testDependency2.jar")
-        file("testDependency3.jar")
+        createFile("testDependency1.jar")
+        createFile("testDependency2.jar")
+        createFile("testDependency3.jar")
         buildFile << """
 dependencies {
     runtimeOnly project.files("testDependency1.jar")
@@ -298,7 +343,7 @@ downloadLicenses {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -332,7 +377,7 @@ downloadLicenses {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -363,7 +408,7 @@ downloadLicenses {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -394,7 +439,7 @@ downloadLicenses {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -404,14 +449,14 @@ downloadLicenses {
 
     def "should have no license by default for file dependency"() {
         given:
-        file("nolicense.jar")
+        createFile("nolicense.jar")
         buildFile << """
 dependencies {
     runtimeOnly project.files("nolicense.jar")
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -426,9 +471,9 @@ dependencies {
     @Unroll
     def "should exclude file dependencies"() {
         given:
-        file("dep1.jar")
-        file("dep2.jar")
-        file("dep3.jar")
+        createFile("dep1.jar")
+        createFile("dep2.jar")
+        createFile("dep3.jar")
         buildFile << """
 dependencies {
     runtimeOnly project.files("dep1.jar")
@@ -441,7 +486,7 @@ downloadLicenses {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -470,7 +515,7 @@ downloadLicenses {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         dependenciesInReport(xml4LicenseByDependencyReport()) == 0
@@ -482,9 +527,9 @@ downloadLicenses {
 
     def "should ignore non-existing excluded dependencies"() {
         given:
-        file("dep1.jar")
-        file("dep2.jar")
-        file("dep3.jar")
+        createFile("dep1.jar")
+        createFile("dep2.jar")
+        createFile("dep3.jar")
         buildFile << """
 dependencies {
     runtimeOnly project.files("dep1.jar")
@@ -498,7 +543,7 @@ downloadLicenses {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -520,7 +565,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -545,7 +590,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -564,7 +609,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -580,7 +625,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         def xmlByDependency = xml4LicenseByDependencyReport()
@@ -589,8 +634,8 @@ dependencies {
 
     def "should exclude dependency from local repository without pom"() {
         given:
-        directory("libs")
-        file("libs/mydep-1.0.0.jar")
+        new File(projectDir, "libs").mkdirs()
+        createFile("libs/mydep-1.0.0.jar")
         buildFile << """
 repositories {
     flatDir name: "local_repo", dir: "libs"
@@ -605,7 +650,7 @@ downloadLicenses {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         dependenciesInReport(xml4LicenseByDependencyReport()) == 0
@@ -621,7 +666,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         outputDir.listFiles().length == 4
@@ -649,7 +694,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         outputDir.listFiles().length == 6
@@ -677,11 +722,11 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
-        outputDir.listFiles().length == 0
-        directory("target/reports/license").listFiles().length == 4
+        (!outputDir.exists() || outputDir.listFiles().length == 0)
+        new File(projectDir, "target/reports/license").listFiles().length == 4
 
     }
 
@@ -705,7 +750,7 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
         outputDir.listFiles().length == 0
@@ -731,10 +776,10 @@ dependencies {
 """
 
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
-        outputDir.listFiles().length == 0
+        !outputDir.exists() || outputDir.listFiles().length == 0
     }
 
     def "should not generate report if task disabled"() {
@@ -747,10 +792,10 @@ dependencies {
 }
 """
         when:
-        runTasksSuccessfully("downloadLicenses")
+        runTask("downloadLicenses")
 
         then:
-        outputDir.listFiles().length == 0
+        !outputDir.exists() || outputDir.listFiles().length == 0
     }
 
     def xml4DependencyByLicenseReport() {

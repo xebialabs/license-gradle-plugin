@@ -26,17 +26,14 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.*
 
-import javax.inject.Inject
-
 /**
  * Task to back License. Using convention of naming Task types with just their name, which makes calls
  * like tasks.withType(License) nicer, consistent with most internal Gradle tasks.
  *
- * TODO: See if removing headers is valuable to add in
- *
  * @author jryan
  */
-class License extends SourceTask implements VerificationTask {
+abstract class License extends SourceTask implements VerificationTask {
+    
     /**
      * Whether or not to allow the build to continue if there are warnings.
      */
@@ -56,8 +53,6 @@ class License extends SourceTask implements VerificationTask {
      * Whether to skip file where a header has been detected
      */
     @Input boolean skipExistingHeaders = false
-
-    // TODO useDefaultExcludes, not necessary because we're using source sets
 
     /**
      * @link {AbstractLicenseMojo.useDefaultMappings}
@@ -104,13 +99,13 @@ class License extends SourceTask implements VerificationTask {
     @Nested
     NamedDomainObjectContainer<HeaderDefinitionBuilder> headerDefinitions
 
-    @Inject
-    @Deprecated
-    License() {
-    }
+    // Store project root dir at configuration time to avoid Task.project at execution time
+    @Internal
+    File projectRootDir
 
-    License(boolean check) {
-        this.check = check
+    License() {
+        this.projectRootDir = project.rootDir
+        this.check = false
     }
 
     @TaskAction
@@ -125,9 +120,9 @@ class License extends SourceTask implements VerificationTask {
         }
         CallbackWithFailure callback
         if (isCheck()) {
-            callback = new LicenseCheckMojo(getProject().rootDir, isSkipExistingHeaders())
+            callback = new LicenseCheckMojo(projectRootDir, isSkipExistingHeaders())
         } else {
-            callback = new LicenseFormatMojo(getProject().rootDir, isDryRun(), isSkipExistingHeaders())
+            callback = new LicenseFormatMojo(projectRootDir, isDryRun(), isSkipExistingHeaders())
         }
 
         Map<String, String> initial = combineVariables()
@@ -135,7 +130,7 @@ class License extends SourceTask implements VerificationTask {
 
         URI uri = resolveURI()
 
-        new AbstractLicenseMojo(validHeaders, getProject().rootDir, initial, isDryRun(), isSkipExistingHeaders(), isUseDefaultMappings(), isStrictCheck(), uri, source, combinedMappings, getEncoding(), buildHeaderDefinitions())
+        new AbstractLicenseMojo(validHeaders, projectRootDir, initial, isDryRun(), isSkipExistingHeaders(), isUseDefaultMappings(), isStrictCheck(), uri, source, combinedMappings, getEncoding(), buildHeaderDefinitions())
             .execute(callback)
 
         altered = callback.getAffected()

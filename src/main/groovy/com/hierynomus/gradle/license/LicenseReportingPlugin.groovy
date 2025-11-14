@@ -60,9 +60,11 @@ class LicenseReportingPlugin implements Plugin<Project> {
     protected DownloadLicensesExtension createDownloadLicensesExtension() {
         downloadLicensesExtension = project.extensions.create(DOWNLOAD_LICENSES_TASK_NAME, DownloadLicensesExtension)
 
-        def html = new LicensesReport(enabled: true, destination: { -> "${project.reporting.baseDir.path}/license" })
-        def xml = new LicensesReport(enabled: true, destination: { -> "${project.reporting.baseDir.path}/license" })
-        def json = new LicensesReport(enabled: true, destination: { -> "${project.reporting.baseDir.path}/license" })
+        // Use layout.buildDirectory instead of deprecated reporting.baseDir for Gradle 9+
+        def reportsDir = { -> "${project.layout.buildDirectory.get().asFile}/reports/license" }
+        def html = new LicensesReport(enabled: true, destination: reportsDir)
+        def xml = new LicensesReport(enabled: true, destination: reportsDir)
+        def json = new LicensesReport(enabled: true, destination: reportsDir)
 
         downloadLicensesExtension.with {
             // Default for extension

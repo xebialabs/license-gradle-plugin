@@ -15,7 +15,8 @@
  */
 package nl.javadude.gradle.plugins.license
 
-import groovy.util.slurpersupport.GPathResult
+import groovy.xml.XmlSlurper
+import groovy.xml.slurpersupport.GPathResult
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
@@ -185,7 +186,7 @@ class LicenseResolver {
 
             d.each {
                 FileCollectionDependency fileDependency ->
-                    fileDependency.resolve().each {
+                    fileDependency.files.each {
                         if (isDependencyIncluded(it.name)) {
                             fileDependencies.add(it.name)
                         }

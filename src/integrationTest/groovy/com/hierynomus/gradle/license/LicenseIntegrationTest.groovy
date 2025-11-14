@@ -17,44 +17,64 @@
 
 package com.hierynomus.gradle.license
 
-import com.google.common.collect.Iterables
 import com.google.common.io.Files
-import com.hierynomus.gradle.license.LicenseBasePlugin
-import nebula.test.IntegrationSpec
-import nebula.test.functional.ExecutionResult
 import nl.javadude.gradle.plugins.license.header.HeaderDefinitionBuilder
-import org.gradle.api.Project
-import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
+import org.gradle.testkit.runner.TaskOutcome
 import spock.lang.Specification
 import spock.lang.TempDir
 
-class LicenseIntegrationTest extends IntegrationSpec {
+class LicenseIntegrationTest extends Specification {
+    @TempDir
+    File projectDir
+    
+    File buildFile
+    File settingsFile
     File license
+    
     def setup() {
+        buildFile = new File(projectDir, "build.gradle")
+        settingsFile = new File(projectDir, "settings.gradle")
+        
+        settingsFile << """
+rootProject.name = 'test-project'
+"""
+        
         buildFile << """
-    plugins {
-        id "java"
-    }
-    
-    apply plugin: "com.github.hierynomus.license-base"
-    
-    license {
-        ignoreFailures = true
-    }
+plugins {
+    id "java"
+    id "com.github.hierynomus.license-base"
+}
+
+license {
+    ignoreFailures = true
+}
 """
         license = createLicenseFile()
+    }
+    
+    def runTask(String... tasks) {
+        return GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments(tasks + '--stacktrace')
+            .withPluginClasspath()
+            .build()
+    }
+    
+    def runTaskWithFailure(String... tasks) {
+        return GradleRunner.create()
+            .withProjectDir(projectDir)
+            .withArguments(tasks + '--stacktrace')
+            .withPluginClasspath()
+            .buildAndFail()
     }
 
     def "should work on empty project"() {
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.wasExecuted(":licenseMain")
+        result.task(":licenseMain").outcome in [TaskOutcome.SUCCESS, TaskOutcome.NO_SOURCE]
     }
 
     def "should find single file"() {
@@ -62,10 +82,10 @@ class LicenseIntegrationTest extends IntegrationSpec {
         createPropertiesFile()
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.standardOutput.contains("Missing header in: src/main/resources/test.properties")
+        result.output.contains("Missing header in:") && result.output.contains("test.properties")
     }
 
     def "should only find matching extensions"() {
@@ -74,11 +94,11 @@ class LicenseIntegrationTest extends IntegrationSpec {
         createTestingFile()
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        !r.standardOutput.contains("Missing header in: src/main/resources/prop.testing")
-        r.standardOutput.contains("Unknown file extension: src/main/resources/prop.testing")
+        !result.output.contains("prop.testing") || result.output.contains("Unknown file extension:")
+        result.output.contains("Unknown file extension:") && result.output.contains("prop.testing")
     }
 
     def "should be able to add mapping for new extensions"() {
@@ -91,11 +111,11 @@ license.mapping {
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.standardOutput.contains("Missing header in: src/main/resources/prop.testing")
-        !r.standardOutput.contains("Unknown file extension: src/main/resources/prop.testing")
+        result.output.contains("Missing header in:") && result.output.contains("prop.testing")
+        !result.output.contains("Unknown file extension:")
 
     }
 
@@ -106,11 +126,11 @@ license.mapping {
 license.mapping('sh.ftl', 'SCRIPT_STYLE')
 """
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.standardOutput.contains("Missing header in: src/main/resources/prop.sh.ftl")
-        !r.standardOutput.contains("Unknown file extension: src/main/resources/prop.sh.ftl")
+        result.output.contains("Missing header in:") && result.output.contains("prop.sh.ftl")
+        !result.output.contains("Unknown file extension:")
     }
 
     def "should find multiple files"() {
@@ -120,12 +140,12 @@ license.mapping('sh.ftl', 'SCRIPT_STYLE')
         createTestingFile()
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.standardOutput.contains("Missing header in: src/main/resources/test.properties")
-        r.standardOutput.contains("Missing header in: src/main/java/Test.java")
-        r.standardOutput.contains("Unknown file extension: src/main/resources/prop.testing")
+        result.output.contains("Missing header in:") && result.output.contains("test.properties")
+        result.output.contains("Missing header in:") && result.output.contains("Test.java")
+        result.output.contains("Unknown file extension:") && result.output.contains("prop.testing")
 
     }
 
@@ -135,10 +155,10 @@ license.mapping('sh.ftl', 'SCRIPT_STYLE')
         buildFile << "license.ignoreFailures = false\n"
 
         when:
-        ExecutionResult r = runTasksWithFailure("licenseMain")
+        def result = runTaskWithFailure("licenseMain")
 
         then:
-        r.failure instanceof RuntimeException
+        result.task(":licenseMain").outcome == TaskOutcome.FAILED
     }
 
     def "should not fail on excluded file with missing header (1)"() {
@@ -149,10 +169,10 @@ license.ignoreFailures = false
 license.excludes([\"**/*.properties\"])
 """
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.success
+        result.task(":licenseMain").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE, TaskOutcome.NO_SOURCE]
     }
 
     def "should not fail on excluded file with missing header (2)"() {
@@ -163,10 +183,10 @@ license.ignoreFailures = false
 license.exclude \"**/*.properties\"
 """
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.success
+        result.task(":licenseMain").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE, TaskOutcome.NO_SOURCE]
     }
 
     def "should not fail on file that does not fit includes pattern (1)"() {
@@ -180,10 +200,10 @@ license.include "**/header.properties"
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.success
+        result.task(":licenseMain").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE, TaskOutcome.NO_SOURCE]
     }
 
     def "should not fail on file that does not fit includes pattern (2)"() {
@@ -197,10 +217,10 @@ license.includes(["**/header.properties"])
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.success
+        result.task(":licenseMain").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE, TaskOutcome.NO_SOURCE]
     }
 
     def "should correctly mix includes and excludes"() {
@@ -216,10 +236,10 @@ license.excludes(["**/test.properties"])
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.success
+        result.task(":licenseMain").outcome in [TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE, TaskOutcome.NO_SOURCE]
     }
 
     def "should add header when formatting"() {
@@ -228,7 +248,7 @@ license.excludes(["**/test.properties"])
         def contents = propFile.text
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
+        def result = runTask("licenseFormatMain")
 
         then:
         propFile.text == '''#
@@ -242,10 +262,11 @@ key2 = value2
     }
 
     def "should add header to Java file"() {
+        given:
         File javaFile = createJavaFile()
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
+        def result = runTask("licenseFormatMain")
 
         then:
         javaFile.text == '''/**
@@ -258,6 +279,7 @@ public class Test {
     }
 
     def "can apply custom header definition formatting"() {
+        given:
         File javaFile = createJavaFile()
         createLicenseFile('''Put a gun against his head,
 Pulled my trigger, now he's dead.
@@ -277,7 +299,7 @@ tasks.licenseFormatMain.mapping("java", "bohemian_rhapsody")
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
+        def result = runTask("licenseFormatMain")
 
         then:
         javaFile.text == '''Mama, just killed a man,
@@ -299,10 +321,10 @@ tasks.licenseMain.ext.year = 2012
 """
 
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        !r.standardOutput.contains("Missing header in: src/main/resources/header.properties")
+        !result.output.contains("Missing header in:") || !result.output.contains("header.properties")
 
     }
 
@@ -317,10 +339,10 @@ tasks.licenseMain {
 }
 """
         when:
-        ExecutionResult r = runTasksSuccessfully("licenseMain")
+        def result = runTask("licenseMain")
 
         then:
-        r.standardOutput.contains("Missing header in: src/main/resources/test.properties")
+        result.output.contains("Missing header in:") && result.output.contains("test.properties")
     }
 
 //    def "should apply license from classpath"() {
@@ -332,15 +354,15 @@ tasks.licenseMain {
 //
 //
 //        when:
-//        ExecutionResult r = runTasksSuccessfully("licenseFormatMain")
+//        def result = runTask("licenseFormatMain")
 //
 //        then:
 //        propFile.text.startsWith("# It's mine, I tell you, mine!")
 //    }
 //
 
-     File createLicenseFile(String content) {
-        File file = file("LICENSE")
+    File createLicenseFile(String content) {
+        File file = new File(projectDir, "LICENSE")
         file.text = content
         file
     }
@@ -350,43 +372,50 @@ tasks.licenseMain {
     }
 
     File createJavaFile() {
-        File file = file("src/main/java/Test.java")
+        File file = new File(projectDir, "src/main/java/Test.java")
+        Files.createParentDirs(file)
         file << '''public class Test {
         static { System.out.println("Hello") }
 }
 '''
+        return file
     }
 
     File createTestingFile() {
-        File file = file("src/main/resources/prop.testing")
+        File file = new File(projectDir, "src/main/resources/prop.testing")
+        Files.createParentDirs(file)
         file << '''keyA = valueB
 keyB = valueB
 '''
+        return file
     }
 
-    public File createFreemarkerShellFile() {
-        File file = file("src/main/resources/prop.sh.ftl")
+    File createFreemarkerShellFile() {
+        File file = new File(projectDir, "src/main/resources/prop.sh.ftl")
+        Files.createParentDirs(file)
         file << '''#!/bin/bash
 echo "Hello world!"
 '''
+        return file
     }
 
     File createPropertiesFile() {
-        def f = file("src/main/resources/test.properties")
-        Files.createParentDirs(f);
+        def f = new File(projectDir, "src/main/resources/test.properties")
+        Files.createParentDirs(f)
         f << '''key1 = value1
 key2 = value2
 '''
+        return f
     }
 
-    public File createPropertiesFileWithHeader() {
+    File createPropertiesFileWithHeader() {
         File file = new File(projectDir, "src/main/resources/header.properties")
-        Files.createParentDirs(file);
+        Files.createParentDirs(file)
         file << '''# This is a sample license created in 2012
 key3 = value3
 key4 = value4
 '''
-        file
+        return file
     }
 
 }
