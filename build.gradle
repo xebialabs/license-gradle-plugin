@@ -155,10 +155,7 @@ license {
     ignoreFailures = true
 }
 
-tasks.withType(Test).all { t ->
-  // Exclude Android tests that fail due to Android Gradle Plugin compatibility
-//   t.exclude '**/AndroidLicensePluginTest**'
-  
+tasks.withType(Test).all { t ->  
   t.afterSuite { descriptor, result ->
     def indicator = "\u001B[32m✓\u001b[0m"
     if (result.failedTestCount > 0) {

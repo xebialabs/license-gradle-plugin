@@ -1,6 +1,6 @@
 License Gradle Plugin
 Copyright (C) 2011 - Jeroen van Erp <jeroen@javadude.nl>
-Copyright (C) 2025 - XebiaLabs (Digital.ai)
+Copyright (C) 2025 - Digital.ai
 
 ================================================================================
 
@@ -9,7 +9,7 @@ https://github.com/hierynomus/license-gradle-plugin
 
 Original Author: Jeroen van Erp (https://github.com/hierynomus)
 
-This fork is maintained by XebiaLabs for use in Digital.ai products and 
+This fork is maintained by Digital.ai for use in its products and 
 includes modifications and enhancements specific to our requirements.
 
 ================================================================================
