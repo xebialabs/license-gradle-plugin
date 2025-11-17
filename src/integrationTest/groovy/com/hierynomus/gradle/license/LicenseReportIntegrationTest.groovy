@@ -31,7 +31,7 @@ rootProject.name = 'test-project'
         buildFile << """
 plugins {
     id "java"
-    id "com.github.hierynomus.license-report"
+    id "com.xebialabs.license-report"
 }
 
 group = "testGroup"

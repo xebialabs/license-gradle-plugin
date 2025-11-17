@@ -212,25 +212,25 @@ def pomConfig = {
 gradlePlugin {
     plugins {
         licensePlugin {
-            id = "com.github.hierynomus.license"
+            id = "com.xebialabs.license"
             implementationClass = "nl.javadude.gradle.plugins.license.LicensePlugin"
-            displayName = "License plugin for Gradle"
+            displayName = "License plugin for Gradle (Digital.ai fork)"
             description = "Applies a header to files, typically a license"
             tags.set(["gradle", "plugin", "license"])
         }
 
         licenseBasePlugin {
-            id = "com.github.hierynomus.license-base"
+            id = "com.xebialabs.license-base"
             implementationClass = "com.hierynomus.gradle.license.LicenseBasePlugin"
-            displayName = "Base License plugin for Gradle"
+            displayName = "Base License plugin for Gradle (Digital.ai fork)"
             description = "Base plugin to apply a header to files, typically a license"
             tags.set(["gradle", "plugin", "license"])
         }
 
         licenseReportPlugin {
-            id = "com.github.hierynomus.license-report"
+            id = "com.xebialabs.license-report"
             implementationClass = "com.hierynomus.gradle.license.LicenseReportingPlugin"
-            displayName = "License Report plugin for Gradle"
+            displayName = "License Report plugin for Gradle (Digital.ai fork)"
             description = "Reports over licenses"
             tags.set(["gradle", "plugin", "license", "report"])
         }

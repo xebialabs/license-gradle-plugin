@@ -13,21 +13,44 @@ This plugin will scan and adapt your source files to include a provided header, 
 This plugin will also report on the licenses of your dependencies.
 
 == Applying the plugin
-From v0.11.0 onwards the `license-gradle-plugin` will be published to http://bintray.com[] and will be available through the http://plugins.gradle.org/[Gradle plugin exchange]. This means that there are a few different usage scenarios listed below.
 
+=== Using the Digital.ai fork
+This Digital.ai fork is published to internal Nexus repository.
 
-=== Gradle 2.1 and above
 In your `build.gradle` file add:
 
 [source,groovy,subs="verbatim,attributes"]
 ----
+buildscript {
+  repositories {
+    maven {
+      url "${nexusBaseUrl}/repositories/releases"
+      credentials {
+        username nexusUserName
+        password nexusPassword
+      }
+    }
+  }
+  dependencies {
+    classpath "com.xebialabs.gradle.plugins:license-gradle-plugin:{license_plugin_version}"
+  }
+}
+
+apply plugin: "com.xebialabs.license"
+----
+
+=== Using the original plugin (Gradle 2.1+)
+If you prefer to use the original hierynomus version from the Gradle Plugin Portal:
+
+[source,groovy,subs="verbatim,attributes"]
+----
 plugins {
-    id "com.github.hierynomus.license" version "{license_plugin_version}"
+    id "com.github.hierynomus.license" version "0.16.1"
 }
 ----
 
-=== Gradle 1.x/2.0, latest license-gradle-plugin
-In your `build.gradle` file add:
+=== Legacy setup (Gradle 1.x/2.0)
+For older Gradle versions with the original plugin:
 
 [source,groovy,subs="verbatim,attributes"]
 ----
@@ -38,39 +61,21 @@ buildscript {
     }
   }
   dependencies {
-    classpath "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:{license_plugin_version}"
+    classpath "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.16.1"
   }
 }
 
 apply plugin: "com.github.hierynomus.license"
 ----
 
-=== Gradle 1.x/2.0, gradle-license-plugin 0.10.0 (and earlier)
-In your `build.gradle` file add:
-
-[source,groovy,subs="verbatim,attributes"]
-----
-    buildscript {
-        repositories {
-            mavenCentral()
-        }
-
-        dependencies {
-            classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.10.0'
-        }
-    }
-
-    apply plugin: 'license'
-----
-
 == Source file license application
 
-=== com.github.hierynomus.license-base Plugin
+=== com.xebialabs.license-base Plugin
 
 [source,groovy,subs="verbatim,attributes"]
 ----
 plugins {
-  id "com.github.hierynomus.license-base" version"{license_plugin_version}"
+  id "com.xebialabs.license-base" version"{license_plugin_version}"
 }
 ----
 
@@ -84,19 +89,19 @@ This plugin contains two types of tasks to each source set available in your pro
 
 Furthermore this task exposes the `license` extension to the project, allowing you to finetune the configuration of the plugin.
 
-=== com.github.hierynomus.license Plugin
+=== com.xebialabs.license Plugin
 
 [source,groovy,subs="verbatim,attributes"]
 ----
 plugins {
-  id "com.github.hierynomus.license" version"{license_plugin_version}"
+  id "com.xebialabs.license" version"{license_plugin_version}"
 }
 ----
 
 This plugin will apply the following plugins:
 
-- `com.github.hierynomus.license-base`
-- `com.github.hierynomus.license-report`
+- `com.xebialabs.license-base`
+- `com.xebialabs.license-report`
 
 Furthermore it will create the following tasks:
 
@@ -342,12 +347,12 @@ licenseFormat.dependsOn licenseFormatSql
 == Dependency License Reporting
 Next to checking for and applying license headers to your source files, this plugin also supports reporting on the licenses that your dependencies are licensed under.
 
-== com.github.hierynomus.license-report
+== com.xebialabs.license-report
 
 [source,groovy,subs="verbatim,attributes"]
 ----
 plugins {
-  id "com.github.hierynomus.license-report" version"{license_plugin_version}"
+  id "com.xebialabs.license-report" version"{license_plugin_version}"
 }
 ----
 

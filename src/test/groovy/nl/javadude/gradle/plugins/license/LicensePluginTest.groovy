@@ -119,7 +119,7 @@ class LicensePluginTest {
     @Test
     public void shouldRunLicenseDuringCheck() {
         project.apply plugin: 'java'
-        project.apply plugin: 'com.github.hierynomus.license'
+        project.apply plugin: 'com.xebialabs.license'
         def task = project.tasks.create('licenseManual', License)
 
         Set<Task> dependsOn = project.tasks['check'].getDependsOn()
@@ -132,7 +132,7 @@ class LicensePluginTest {
     @Test
     public void shouldRunLicenseFromBaseTasks() {
         project.apply plugin: 'java'
-        project.apply plugin: 'com.github.hierynomus.license'
+        project.apply plugin: 'com.xebialabs.license'
         def task = project.tasks.create('licenseManual', LicenseCheck)
         def formatTask = project.tasks.create('licenseManualFormat', LicenseFormat)
 
