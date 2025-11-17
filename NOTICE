@@ -1,0 +1,30 @@
+License Gradle Plugin
+Copyright (C) 2011 - Jeroen van Erp <jeroen@javadude.nl>
+Copyright (C) 2025 - Digital.ai
+
+================================================================================
+
+This project is a fork of the original License Gradle Plugin:
+https://github.com/hierynomus/license-gradle-plugin
+
+Original Author: Jeroen van Erp (https://github.com/hierynomus)
+
+This fork is maintained by Digital.ai for use in its products and 
+includes modifications and enhancements specific to our requirements.
+
+================================================================================
+
+MODIFICATIONS IN THIS FORK:
+
+- Updated to Java 21 compatibility
+- Updated dependencies to newer versions
+- Enhanced Android Gradle Plugin support
+- Integration test improvements
+- Build system modernization for Gradle 8.x/9.x
+
+================================================================================
+
+This software is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+The original project and all modifications are distributed under the same license.

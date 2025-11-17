@@ -1,8 +1,12 @@
-= License Gradle Plugin
-Jeroen van Erp
-:license_plugin_version: 0.15.0
+= License Gradle Plugin (Digital.ai Fork)
+:license_plugin_version: 0.17.0
 
-image:https://travis-ci.org/hierynomus/license-gradle-plugin.svg?branch=master[Build Status,link=https://travis-ci.org/hierynomus/license-gradle-plugin]
+[IMPORTANT]
+====
+This is a fork of the original https://github.com/hierynomus/license-gradle-plugin[license-gradle-plugin] by Jeroen van Erp.
+
+This fork is maintained by Digital.ai for use in its products. For the original plugin, please visit the upstream repository.
+====
 
 This plugin will scan and adapt your source files to include a provided header, e.g. a LICENSE file.  By default it will scan every source set and report warnings. It will also create format tasks, which will properly format and apply the specified header. A bulk of the logic comes from the maven-license-plugin.
 

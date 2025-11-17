@@ -25,7 +25,7 @@ apply plugin: 'com.github.hierynomus.license'
 
 defaultTasks 'build'
 
-group = 'com.hierynomus.gradle.plugins'
+group = 'com.xebialabs.gradle.plugins'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -155,10 +155,7 @@ license {
     ignoreFailures = true
 }
 
-tasks.withType(Test).all { t ->
-  // Exclude Android tests that fail due to Android Gradle Plugin compatibility
-  t.exclude '**/AndroidLicensePluginTest**'
-  
+tasks.withType(Test).all { t ->  
   t.afterSuite { descriptor, result ->
     def indicator = "\u001B[32m✓\u001b[0m"
     if (result.failedTestCount > 0) {
@@ -190,7 +187,13 @@ def pomConfig = {
             name = 'Jeroen van Erp'
             url = 'http://www.javadude.nl/'
             email = 'jeroen@javadude.nl'
-            roles { role 'Developer' }
+            roles { role 'Original Author' }
+        }
+        developer {
+            id = 'xebialabs'
+            name = 'XebiaLabs (Digital.ai)'
+            url = 'https://digital.ai/'
+            roles { role 'Maintainer' }
         }
     }
 
@@ -232,8 +235,8 @@ gradlePlugin {
             tags.set(["gradle", "plugin", "license", "report"])
         }
     }
-    website = "https://github.com/hierynomus/license-gradle-plugin"
-    vcsUrl = "https://github.com/hierynomus/license-gradle-plugin.git"
+    website = "https://github.com/xebialabs/license-gradle-plugin"
+    vcsUrl = "https://github.com/xebialabs/license-gradle-plugin.git"
 }
 
 if (!System.env.containsKey("JENKINS_URL")) {
