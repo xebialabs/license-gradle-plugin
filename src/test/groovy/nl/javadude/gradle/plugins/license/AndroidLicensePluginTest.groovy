@@ -102,9 +102,9 @@ class AndroidLicensePluginTest {
     public void shouldFindTwoLicenseTaskPerSourceSet() {
         def tasks = project.tasks.withType(License.class).findAll { true }
         // Android Gradle Plugin creates different numbers of source sets in different versions
-        // Minimum expected: [androidTest, debug, main, release, test, testDebug, testRelease, testFixtures, release].count * 2 = 18
-        // AGP 8.x may create additional source sets (e.g., for screenshots, baseline profiles, etc.)
-        assertThat tasks.size(), greaterThanOrEqualTo(18)
+        // Current AGP: [androidTest, androidTestDebug, androidTestRelease, debug, main, release, test, testDebug, 
+        // testFixtures, testFixturesDebug, testFixturesRelease, testRelease].count * 2 = 24
+        assertThat tasks.size(), greaterThanOrEqualTo(24)
     }
 
     @Test
