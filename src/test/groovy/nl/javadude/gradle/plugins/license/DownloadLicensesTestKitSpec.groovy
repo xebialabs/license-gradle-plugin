@@ -49,7 +49,7 @@ rootProject.name = 'test-project'
         buildFile << """
 plugins {
     id 'java'
-    id 'com.github.hierynomus.license'
+    id 'com.xebialabs.license'
 }
 
 buildDir = "generated"

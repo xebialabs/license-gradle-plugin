@@ -43,7 +43,7 @@ rootProject.name = 'test-project'
         buildFile << """
 plugins {
     id "java"
-    id "com.github.hierynomus.license-base"
+    id "com.xebialabs.license-base"
 }
 
 license {
